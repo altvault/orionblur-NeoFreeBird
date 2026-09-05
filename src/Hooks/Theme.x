@@ -528,10 +528,52 @@ static UIColor* tabItemColor(BOOL selected) {
         if (logoView.image) {
             logoView.image = [logoView.image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
             logoView.tintColor = CurrentAccentColor();
+            BHTMarkAccentTintedIcon(logoView, YES);
         }
     }
 
     return titleView;
+}
+
+%end
+
+// MARK: - iPad sidebar logo theming
+
+static void ApplySidebarIconTheme(UIViewController* sidebar) {
+    Ivar iconViewIvar =
+        class_getInstanceVariable(%c(T1AppSplitSideBarViewController), "_iconView");
+    if (!iconViewIvar) {
+        return;
+    }
+
+    UIImageView* iconView = object_getIvar(sidebar, iconViewIvar);
+    if (![iconView isKindOfClass:[UIImageView class]] || !iconView.image) {
+        return;
+    }
+
+    BOOL wantsAccent = [BHTSettings boolForKey:@"color_twitter_icon_in_top_bar"];
+    UIImageRenderingMode mode = wantsAccent ? UIImageRenderingModeAlwaysTemplate
+                                            : UIImageRenderingModeAlwaysOriginal;
+
+    if (iconView.image.renderingMode != mode) {
+        iconView.image = [iconView.image imageWithRenderingMode:mode];
+    }
+    if (wantsAccent) {
+        iconView.tintColor = CurrentAccentColor();
+    }
+    BHTMarkAccentTintedIcon(iconView, wantsAccent);
+}
+
+%hook T1AppSplitSideBarViewController
+
+- (void)viewDidLoad {
+    %orig;
+    ApplySidebarIconTheme(self);
+}
+
+- (void)viewWillLayoutSubviews {
+    %orig;
+    ApplySidebarIconTheme(self);
 }
 
 %end
